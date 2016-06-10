@@ -19,7 +19,7 @@ addpath([pwd,'/data']);
 load('data_vortex_lattice.mat');
 load('data_airfoil.mat');
 load('data_refs.mat');
-load('data_kinematics.mat');    
+load('data_kinematics.mat');
 
 
 
@@ -36,28 +36,28 @@ flag_VORTONS   = 1; % Flag to transform wake vortex rings panels into vortons.
 
 flag_LEVS      = 0; % Flag to activate wake panels shedding from the LEADING EDGE.
 
-flag_FRSTR     = 1; % Flag to change FREE-STREAM reference velocity used in force calculation function,do not activate for simple cases(still issues).
+flag_FRSTR     = 0; % Flag to change FREE-STREAM reference velocity used in force calculation function,do not activate for simple cases(still issues).
 
 flag_WAKEDIST  = 0;  % Flag to change the distance of the trailing segment of the first row of wake panels, LENGTH WAKE PANEL = cw * FREE-STREAM VELOCITY * TIME STEP.
-cw = 0.50;  
+cw = 0.50;
 
 flag_BENDMOT   = 0; % Flag to activate bending motion of the wing,do not activate.
 
-flag_FRAME     = 1; % Flag to activate frame recording.
+flag_FRAME     = 0; % Flag to activate frame recording.
 
 %% Time-step calculation
 
 
 if flag_FRSTR == 1
 
-t1 = linspace(0,t_fin,100);    
-Q_inf_med = max(r(t1))*b_ref/2;    
-    
-    
-    
+t1 = linspace(0,t_fin,100);
+Q_inf_med = max(r(t1))*b_ref/2;
+
+
+
 else
-    
-   t1 = zeros(1,100); 
+
+   t1 = zeros(1,100);
    Q_inf1 = cell(1,100);
    Q_inf_med = 0;
 
@@ -69,9 +69,9 @@ else
       t1(j) = t_fin;
       else
       t1(j) = t_fin/101*(j+1);
-      end 
+      end
      end
-    
+
     [u_inf1,v_inf1,w_inf1] = func_kinematics_vel(t1(j),0,0,0,angle2quat(0,0,0));
     Q_inf1{j} = [u_inf1,v_inf1,w_inf1];
     Q_inf_med = Q_inf_med+norm(Q_inf1{j});
@@ -84,10 +84,10 @@ Q_inf_med = Q_inf_med/101;
 end
 
 if flag_WAKEDIST == 1
-    
+
     N_t = 160;
     dt = t_fin/N_t;
-    
+
 else
     k   = 1/n_rows;
     dt  = k*c_ref/Q_inf_med;
@@ -142,7 +142,7 @@ LE_gamma_w_mat          = zeros(N_t-1,n_cols);
 LE_FW_wake_vortons      = cell(N_t-1,n_cols);
 
 
-%% Save BFR vortex lattice positions at istant 0 
+%% Save BFR vortex lattice positions at istant 0
 
 vortices_mat_0    = vortices_mat;
 vortices_mat_CELL = cell(1,N_t);
@@ -154,25 +154,25 @@ Quat_CELL{1}      = angle2quat (psi0, theta0, phi0);  %Converts Euler angles int
 
 for i_w = 1:N_t
 
-    
-%% Wait for the output.dat from MBDyn    
-    
-if flag_MBD_IO == 1    
-waiting_time = tic;    
+
+%% Wait for the output.dat from MBDyn
+
+if flag_MBD_IO == 1
+waiting_time = tic;
  if i_w > 2
-   
+
   pause(1)
   while (exist('INI_OUTPUT.dat','file')) == 0
   pause(1)
   end
   normal()
- end    
+ end
 waiting_time = toc(waiting_time);
 
 else
 end
 
-%% Time 
+%% Time
 
 t = t_fin*(i_w)/N_t;
 
@@ -196,30 +196,30 @@ time(i_w)      = t;
 disp(['Time step number : ' num2str(i_w) ' non-dimensional time is : ' num2str(adim_time(i_w)) ]);
 disp(['Dimensional time is : ' num2str(time(i_w)) ]);
 
-    
+
 %% Updating wing position in inertial reference frame
 
 if i_w == 1
-    
+
 time1_UPDPOS = tic;
-    
+
     Quat_CELL{i_w}         = func_upd_att(t,Quat_CELL{1});
     vortices_mat           = func_upd_pos(t,vortices_mat_0,Quat_CELL{i_w},flag_BENDMOT);
     vortices_mat_CELL{i_w} = vortices_mat;
-    
+
 time1_UPDPOS = toc(time1_UPDPOS)
 
 else
-    
+
 time1_UPDPOS = tic;
     Quat_CELL{i_w} = func_upd_att(t,Quat_CELL{1});
     vortices_mat = func_upd_pos(t,vortices_mat_0,Quat_CELL{i_w},flag_BENDMOT);
     vortices_mat_CELL{i_w} = vortices_mat;
-    
+
 time1_UPDPOS = toc(time1_UPDPOS)
 
 end
-    
+
 %% Compute AIM ( once )
 time_AIM = tic;
 if i_w == 1
@@ -259,21 +259,21 @@ end
 
 
 if i_w ~= 1
-    
+
  time2_SHEDWAKE = tic;
-     
-     if flag_WAKEDIST == 1  
+
+     if flag_WAKEDIST == 1
      func_shedwake_CW(i_w,vortices_mat_CELL,cw);
      else
      func_shedwake(i_w,vortices_mat_CELL);
      end
-     
+
      % Assign Gamma from previous time step to wake panels
      for j = 1:n_cols
          gamma_w_mat(i_w-1,j) = gamma_mat_CELL{i_w-1}(n_rows,j);
          NW_wake_vortex_rings{i_w-1,j}.GAMMA = gamma_w_mat(i_w-1,j);
      end
-     
+
  time2_SHEDWAKE = toc(time2_SHEDWAKE)
 
 else
@@ -284,26 +284,26 @@ end
 if flag_LEVS == 1
 if i_w ~= 1
 
-    
+
  time2_1_SHEDWAKE = tic;
- 
+
      func_LE_shedwake(i_w,vortices_mat_CELL);
-   
+
      % Assign Gamma from previous time step to wake panels
      for j = 1:n_cols
          LE_gamma_w_mat(i_w-1,j) = -gamma_mat_CELL{i_w-1}(1,j);
          LE_NW_wake_vortex_rings{i_w-1,j}.GAMMA = LE_gamma_w_mat(i_w-1,j);
      end
-     
+
  time2_1_SHEDWAKE = toc(time2_1_SHEDWAKE)
 
 else
 end
 end
 
-%% Solve linear system for each time step with changing boundary conditions     
+%% Solve linear system for each time step with changing boundary conditions
 
-time3_SOLVER = tic;     
+time3_SOLVER = tic;
        [gamma_mat_CELL{i_w},W_panels_TV,u_mot_CP,v_mot_CP,w_mot_CP,U_wake,V_wake,W_wake,U_panels_TOT,V_panels_TOT,W_panels_TOT] = func_proc_solver (t,i_w,vortices_mat_CELL{i_w},vortices_mat_0,Quat_CELL{i_w},...
            AIM,CHORDWISE_AIM,U_ind_mat,V_ind_mat,W_ind_mat,U_REL,V_REL,W_REL,flag_LEVS,flag_VORTONS,flag_BENDMOT,sig);
 time3_SOLVER = toc(time3_SOLVER)
@@ -311,7 +311,7 @@ time3_SOLVER = toc(time3_SOLVER)
 %% Compute forces and store them into cells and arrays
 
 if i_w ~= 1
-    
+
 time4_FORCES = tic;
   [C_L_v(i_w),C_Di_v(i_w),C_Di_v_st(i_w),C_Di_v_unst(i_w),C_L_mat{i_w},C_Di_mat{i_w},F_mat{i_w},L_mat{i_w},spanload{i_w},adim_spanload{i_w}] = func_forces_KATZPLOTKIN(dt,vortices_mat,gamma_mat_CELL{i_w},gamma_mat_CELL{i_w-1},Q_inf,...
       U_wake,V_wake,W_wake,W_panels_TV,U_panels_TOT,V_panels_TOT,W_panels_TOT,u_mot_CP,v_mot_CP,w_mot_CP);
@@ -329,8 +329,8 @@ end
 %% Create OUTPUT.dat for MBDyn analysis
 
 if flag_MBD_IO == 1
-    
-time_INPUT = tic;     
+
+time_INPUT = tic;
 
  func_INPUT(F_mat{i_w},vortices_mat_0);
 
@@ -343,9 +343,9 @@ end
 if flag_VORTONS == 1
 
   if i_w > 2
-    
+
    time_RING2VORT = tic;
-   
+
    func_TE_rings2vortons(i_w,NW_wake_vortex_rings);
 
    time_RING2VORT = toc(time_RING2VORT);
@@ -355,9 +355,9 @@ if flag_VORTONS == 1
  if flag_LEVS == 1
 
   if i_w > 2
-    
+
    time_RING2VORT2 = tic;
-   
+
    func_LE_rings2vortons(i_w,LE_NW_wake_vortex_rings);
 
    time_RING2VORT2 = toc(time_RING2VORT2);
@@ -365,7 +365,7 @@ if flag_VORTONS == 1
   end
  else
  end
- 
+
 else
 end
 
@@ -376,80 +376,80 @@ end
 
 
 if flag_VORTONS == 1;
-    
-    
+
+
 if i_w > 1
 
 if  flag_RU == 1
  if  flag_LEVS == 1
-     
+
   if i_w > 3
-      
-  time5_ROLLUP = tic;  
+
+  time5_ROLLUP = tic;
     func_wakerollup_VORTONS_TELE_PARALL(dt,i_w,vortices_mat_CELL{i_w},gamma_mat_CELL{i_w},NW_wake_vortex_rings,LE_NW_wake_vortex_rings,FW_wake_vortons,LE_FW_wake_vortons,sig);
   time5_ROLLUP = toc(time5_ROLLUP)
-  
+
   else
-      
-  time5_ROLLUP = tic;  
+
+  time5_ROLLUP = tic;
     func_wakerollup_1_TELE(dt,i_w,vortices_mat_CELL{i_w},gamma_mat_CELL{i_w},NW_wake_vortex_rings,LE_NW_wake_vortex_rings);
   time5_ROLLUP = toc(time5_ROLLUP)
-  
+
   end
-  
+
  else
   if i_w > 3
-      
-  time5_ROLLUP = tic;  
+
+  time5_ROLLUP = tic;
     func_wakerollup_VORTONS_PARALL(dt,i_w,vortices_mat_CELL{i_w},gamma_mat_CELL{i_w},NW_wake_vortex_rings,FW_wake_vortons,sig);
   time5_ROLLUP = toc(time5_ROLLUP)
-  
+
   else
-        
-  time5_ROLLUP = tic;  
+
+  time5_ROLLUP = tic;
     func_wakerollup_1(dt,i_w,vortices_mat_CELL{i_w},gamma_mat_CELL{i_w},NW_wake_vortex_rings);
   time5_ROLLUP = toc(time5_ROLLUP)
 
 
   end
-     
+
  end
-  
+
 
  else
  end
 else
- 
+
 end
 
 else
-    
+
 if i_w ~= 1
 
 if  flag_RU == 1
  if  flag_LEVS == 1
-  
-  time5_ROLLUP = tic;  
+
+  time5_ROLLUP = tic;
     func_wakerollup_MODIFIED(dt,i_w,vortices_mat_CELL{i_w},gamma_mat_CELL{i_w},NW_wake_vortex_rings,LE_NW_wake_vortex_rings);
-  time5_ROLLUP = toc(time5_ROLLUP)  
+  time5_ROLLUP = toc(time5_ROLLUP)
  else
-     
-  time5_ROLLUP = tic;  
+
+  time5_ROLLUP = tic;
     func_wakerollup(dt,i_w,vortices_mat_CELL{i_w},gamma_mat_CELL{i_w},NW_wake_vortex_rings);
-  time5_ROLLUP = toc(time5_ROLLUP)  
-   
-     
+  time5_ROLLUP = toc(time5_ROLLUP)
+
+
  end
-  
+
 
  else
  end
 else
- 
+
 end
 end
 
- 
+
 %% Time recording
 
 timerec_SOLVER(i_w) = time3_SOLVER;
@@ -459,7 +459,7 @@ if flag_MBD_IO == 1
 est_time(i_w) = (time1_UPDPOS + time3_SOLVER + time_AIM + time_MBD_IO +waiting_time) * (N_t-i_w);
 else
 est_time(i_w) = (time1_UPDPOS + time3_SOLVER + time_AIM) * (N_t-i_w);
-end  
+end
 
 
 if flag_RU == 1
@@ -470,7 +470,7 @@ est_time(i_w) = (time1_UPDPOS + time3_SOLVER + time_AIM) * (N_t-i_w);
     end
 else
 est_time(i_w) = (time1_UPDPOS + time3_SOLVER + time_AIM) * (N_t-i_w);
-end    
+end
 
 
 %% Display current time-step calculations
@@ -491,7 +491,7 @@ disp(['Time(in seconds) of current step was about : ' num2str(step_time(i_w)+tim
 disp(['Estimated minutes to end of computation is : ' num2str(est_time(i_w)/60)]);
 fprintf('\n\n');
 else
-fprintf('\n');    
+fprintf('\n');
 disp(['Time(in seconds) of current step was about : ' num2str(step_time(i_w))]);
 disp(['Estimated minutes to end of computation is : ' num2str(est_time(i_w)/60)]);
 fprintf('\n\n');
@@ -514,7 +514,7 @@ save('SIM_TEMP.mat');
 
 end
 
-%% Saving final workspace 
+%% Saving final workspace
 save('SIM_FIN.mat');
 tot_time = toc(tot_time);
 
