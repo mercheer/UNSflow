@@ -124,6 +124,7 @@ function ldvm(surf::TwoDSurf, curfield::TwoDFlowField, nsteps::Int64 = 500, dtst
         #Udpate current time
         t = t + dt
 
+
         #Update kinematic parameters
         update_kinem(surf, t)
 
